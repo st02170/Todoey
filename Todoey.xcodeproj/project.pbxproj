@@ -13,6 +13,7 @@
 		DF2B023922D9396E00988F1D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DF2B023822D9396E00988F1D /* Assets.xcassets */; };
 		DF2B023C22D9396E00988F1D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DF2B023A22D9396E00988F1D /* LaunchScreen.storyboard */; };
 		DF2B026822D9445D00988F1D /* DataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = DF2B026622D9445D00988F1D /* DataModel.xcdatamodeld */; };
+		DF66F51022DE8BC4003D4869 /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF66F50F22DE8BC4003D4869 /* CategoryViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		DF2B023B22D9396E00988F1D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		DF2B023D22D9396E00988F1D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DF2B026722D9445D00988F1D /* DataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DataModel.xcdatamodel; sourceTree = "<group>"; };
+		DF66F50F22DE8BC4003D4869 /* CategoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +60,7 @@
 			children = (
 				DF2B023122D9396D00988F1D /* AppDelegate.swift */,
 				DF2B023522D9396D00988F1D /* Main.storyboard */,
+				DF66F50F22DE8BC4003D4869 /* CategoryViewController.swift */,
 				DF2B023322D9396D00988F1D /* TodoListViewController.swift */,
 				DF2B026622D9445D00988F1D /* DataModel.xcdatamodeld */,
 				DF2B023822D9396E00988F1D /* Assets.xcassets */,
@@ -138,6 +141,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DF66F51022DE8BC4003D4869 /* CategoryViewController.swift in Sources */,
 				DF2B023422D9396D00988F1D /* TodoListViewController.swift in Sources */,
 				DF2B026822D9445D00988F1D /* DataModel.xcdatamodeld in Sources */,
 				DF2B023222D9396D00988F1D /* AppDelegate.swift in Sources */,

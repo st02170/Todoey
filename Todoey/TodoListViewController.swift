@@ -7,18 +7,31 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
+    //As soon as selectedCategory gets set with a value, it will call loadItems()
+    var selectedCategory : Category? {
+        didSet {
+            loadItems()
+        }
+    }
+    
+    //When our app is running live, then UIApplication.shared will correspond to our live application object. delegate is the delegate of the App object
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        loadItems()
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
     }
+    
+    
+    //MARK: - TableView Datasource Methods
     
     //Sets number of rows to the array count
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -42,22 +55,28 @@ class TodoListViewController: UITableViewController {
         return cell
     }
     
+    
+    //MARK: - TableView Delegate Methods
+    
     //Detects which row is selected
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         //print(itemArray[indexPath.row])
+        
+        //context.delete(itemArray[indexPath.row]) = removes data (current row) from the context/Core Data
+        //itemArray.remove(at: indexPath.row) = removes current row and updates itemArray, which is used to populate the tableview
         
         //Sets the done property of the item to the opposite of what it currently is
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
         saveItems() //allows the properties to be updated in the encoded plist when checked off
         
-        //Forces the tableview to call its data source methods to reload data
-        tableView.reloadData()
-        
         tableView.deselectRow(at: indexPath, animated: true)    //Keeps the cell from turning gray when clicked. Only flashes gray briefly, since it goes back to being deselected
         
     }
+    
+    
+    //MARK: - Add New Items
     
     //Method for when the add button is pressed
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
@@ -72,16 +91,16 @@ class TodoListViewController: UITableViewController {
             //What happens once the user clicks the Add Item button on our UIAlert
             
             //Sets newItem equal to what the user writes in the textfield
-            let newItem = Item()
+            let newItem = Item(context: self.context)
             newItem.title = textField.text!
+            newItem.done = false
+            newItem.parentCategory = self.selectedCategory //parentCategory from DataModel
             
             //Adds item to the array
             self.itemArray.append(newItem)
             
             self.saveItems()    //encodes and writes our data to the encoded plist
-            
-            //Reloads cells with new data so it is visible to the user
-            self.tableView.reloadData()
+
         }
         
         //Adds a textfield to the alert so user can add their item
@@ -99,31 +118,70 @@ class TodoListViewController: UITableViewController {
     }
     
     
+    //MARK: - Model Manipulation Methods
+    
     func saveItems() {
-        
-        let encoder = PropertyListEncoder()
-        
+       
         do{
-            let data = try encoder.encode(itemArray)   //encodes data
-            try data.write(to: dataFilePath!)    //writes data to our data file path
+            try context.save()  //transfers what's in context to our permanent data storage
         } catch {
-            print("Error encoding item array, \(error)")    //prints error
+            print("Error saving context: \(error)")
         }
         
+        tableView.reloadData()
     }
     
-    func loadItems() {
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
         
-        if let data = try? Data(contentsOf: dataFilePath!) {  //allows us to tap into our data. Constant data is set equal to data created using the contents of our dataFilePath. try? turns the result of this method into an optional
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)  //filters and keeps only the items where the parentCategory matches the selectedCategory
+        
+        //Checks if predicate is nil
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])    //if not nil, query results using the predicate while filtering by category
+        } else {
+            request.predicate = categoryPredicate   //if nil, just filter by category since no query is being requested
+        }
+        
+        do {
+            itemArray = try context.fetch(request) //fetches current request. Default request is a blank request that fetches everything inside our persistent container and saves it inside itemArray, which is what we use to load our tableview
+        } catch {
+            print("Error fetching data from context: \(error)")
+        }
+        
+        tableView.reloadData()
+    }
+    
+}
+
+
+//MARK: - Search Bar Methods
+
+extension TodoListViewController : UISearchBarDelegate {
+    
+    //Gets triggered when user hits the search button
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        let request : NSFetchRequest<Item> = Item.fetchRequest() //our request, which will return an array of items
+        
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!) //Structures the query. Checks if the title of the items contain what is in the search bar. searchBar.text is in place of %@
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]    //sorts the results in alphabetical order
+        
+        loadItems(with: request, predicate: predicate)
+
+    }
+    
+    //Every letter you type or when you go from text to no text in the search bar, it will trigger this method
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        //When it goes from text to no text (when you hit the x button to clear the text)
+        if searchBar.text?.count == 0 {
+            loadItems() //default will fetch and show all items in the persistent store
             
-            let decoder = PropertyListDecoder() //will decode our items
-            
-            do {
-                itemArray = try decoder.decode([Item].self, from: data) //itemArray is equal to decoded data
-            } catch {
-                print("Error decoding itemArray, \(error)")
+            //runs method in the main queue
+            DispatchQueue.main.async {  //manager that assigns projects to different threads. Tapping into the main thread
+                searchBar.resignFirstResponder()    //tells searchBar to stop being the first responder (searchBar and keyboard go away)
             }
-            
         }
     }
     
