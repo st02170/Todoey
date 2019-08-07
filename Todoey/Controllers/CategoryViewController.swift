@@ -7,17 +7,18 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
     
-    var categoryArray = [Category]()
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    let realm = try! Realm()
+    
+    var categoryArray : Results<Category>?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        loadCategory()
+        loadCategories()
 
     }
     
@@ -26,7 +27,7 @@ class CategoryViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
-        return categoryArray.count
+        return categoryArray?.count ?? 1 //If not nil, return categoryArray.count. If nil, return 1
         
     }
     
@@ -34,7 +35,7 @@ class CategoryViewController: UITableViewController {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
         
-        cell.textLabel?.text = categoryArray[indexPath.row].name   //name property of category object
+        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added"  //name property of category object
         
         return cell
         
@@ -57,17 +58,19 @@ class CategoryViewController: UITableViewController {
         
         //Tells index of the current selected row. Optional value so use if statement
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categoryArray[indexPath.row]
+            destinationVC.selectedCategory = categoryArray?[indexPath.row]
         }
     }
     
     
     //MARK: - Data Manipulation Methods
     
-    func saveCategory() {
+    func save(category: Category) {
         
         do{
-            try context.save()  //transfers what's in context to our permanent data storage
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
             print("Error saving context: \(error)")
         }
@@ -76,16 +79,10 @@ class CategoryViewController: UITableViewController {
 
     }
     
-    func loadCategory() {
+    func loadCategories() {
         
-        let request : NSFetchRequest<Category> = Category.fetchRequest()
-        
-        do {
-            categoryArray = try context.fetch(request) //fetches current request. Default request is a blank request that fetches everything inside our persistent container and saves it inside categoryArray, which is what we use to load our tableview
-        } catch {
-            print("Error fetching data from context: \(error)")
-        }
-        
+        categoryArray = realm.objects(Category.self)    //pulls out all the items in Realm that are Category objects
+
         tableView.reloadData()
         
     }
@@ -105,13 +102,10 @@ class CategoryViewController: UITableViewController {
             //What happens once the user clicks the Add Category button on our UIAlert
             
             //Sets newCategory equal to what the user writes in the textfield
-            let newCategory = Category(context: self.context)
+            let newCategory = Category()
             newCategory.name = textField.text!
             
-            //Adds category to the array
-            self.categoryArray.append(newCategory)
-            
-            self.saveCategory()
+            self.save(category: newCategory)
             
         }
         
