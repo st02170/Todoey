@@ -8,17 +8,20 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     
-    var categoryArray : Results<Category>?
+    var categories : Results<Category>?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
         loadCategories()
+        
+        tableView.separatorStyle = .none
 
     }
     
@@ -27,15 +30,17 @@ class CategoryViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
-        return categoryArray?.count ?? 1 //If not nil, return categoryArray.count. If nil, return 1
+        return categories?.count ?? 1 //If not nil, return categories.count. If nil, return 1 cell which will say "No Categories Added"
         
     }
     
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        
-        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added"  //name property of category object
+   override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)  //allows us to tap into the cell that gets created inside the superclass. It taps into the cell at the current indexPath
+    
+        cell.textLabel?.text = categories?[indexPath.row].name ?? "No Categories Added"  //name property of category object if not nil. If nil, return text specified
+    
+        cell.backgroundColor = UIColor.randomFlat
         
         return cell
         
@@ -50,7 +55,7 @@ class CategoryViewController: UITableViewController {
         
     }
     
-    //Prep work to make sure that it takes us to the correct to do list for the selected category and not show us all the items that were ever saved. Triggered just before the segue is performed
+    //Prep work to make sure that it takes user to the correct to do list for the selected category and not show all the items that were ever saved. Triggered just before the segue is performed
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         //Grabs reference to where segue takes you (destination)
@@ -58,7 +63,7 @@ class CategoryViewController: UITableViewController {
         
         //Tells index of the current selected row. Optional value so use if statement
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categoryArray?[indexPath.row]
+            destinationVC.selectedCategory = categories?[indexPath.row]
         }
     }
     
@@ -81,9 +86,27 @@ class CategoryViewController: UITableViewController {
     
     func loadCategories() {
         
-        categoryArray = realm.objects(Category.self)    //pulls out all the items in Realm that are Category objects
+        categories = realm.objects(Category.self)    //pulls out all the items in Realm that are Category objects
 
         tableView.reloadData()
+        
+    }
+    
+    //MARK: - Delete Data From Swipe
+    
+    override func updateModel(at indexPath: IndexPath) {
+        
+        if let categoryForDeletion = categories?[indexPath.row] {
+            
+            do {
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
+                }
+            } catch {
+                print("Error deleting category, \(error)")
+            }
+            
+        }
         
     }
     
@@ -124,3 +147,4 @@ class CategoryViewController: UITableViewController {
     }
     
 }
+

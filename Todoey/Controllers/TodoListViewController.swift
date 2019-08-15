@@ -9,7 +9,7 @@
 import UIKit
 import RealmSwift
 
-class TodoListViewController: UITableViewController {
+class TodoListViewController: SwipeTableViewController {
     
     var todoItems : Results<Item>?
     let realm = try! Realm()
@@ -41,16 +41,16 @@ class TodoListViewController: UITableViewController {
     //Populates cells with items from the array
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)  //allows us to tap into the cell that gets created inside the superclass. It taps into the cell at the current indexPath
         
-        if let item = todoItems?[indexPath.row] {
+        if let item = todoItems?[indexPath.row] {   //if there are items
             
             cell.textLabel?.text = item.title   //title property of Item object
             
             //Ternary: cell.accessoryType is set to .checkmark if item.done is true and .none if false
             cell.accessoryType = item.done ? .checkmark : .none
 
-        } else {
+        } else { //if no items
             
             cell.textLabel?.text = "No Items Added"
             
@@ -96,7 +96,7 @@ class TodoListViewController: UITableViewController {
         
         //Button user clicks to add an item
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
-            //What happens once the user clicks the Add Item button on our UIAlert
+            //What happens once the user clicks the Add Item button on UIAlert
 
             if let currentCategory = self.selectedCategory {    //unwraps it and checks to see if the categories are the same
                 
@@ -139,6 +139,24 @@ class TodoListViewController: UITableViewController {
         todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true) //loads and sorts list of items for the selected category by taking the items' titles
         
         tableView.reloadData()
+    }
+    
+    //MARK: - Delete Data From Model
+    override func updateModel(at indexPath: IndexPath) {
+        
+        if let itemForDeletion = todoItems?[indexPath.row] {
+            
+            do {
+                try self.realm.write {
+                    self.realm.delete(itemForDeletion)
+                }
+            } catch {
+                print("Error deleting item, \(error)")
+            }
+            
+        }
+
+        
     }
     
 }
